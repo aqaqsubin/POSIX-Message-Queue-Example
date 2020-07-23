@@ -9,7 +9,7 @@
 #include <unistd.h>
 
 const char* input = "input.db";
-const char * slash = "/home/root/vscode/make_mq/";
+const char * slash = "/";
 
 int* ptr_input;
 
@@ -68,18 +68,18 @@ void client(void * params) {
 
     //Get Message Queue ID
     struct Paramter *my_params = (struct Paramter *)params;
-    server_mqID = ptr_input[my_params->server_mqID];
+    server_mqID = my_params->server_mqID;
 
     printf("Message Queue ID : %d \n",server_mqID);
 
     //Message Queue name it Server PID + Thread_Num
-    pid_to_str = (char *)malloc(sizeof(char)*getDigit(server_mqID));
-    mq_name = (char *)calloc(0, sizeof(pid_to_str) + strlen(slash));
+    pid_to_str = (char *)malloc(getDigit(server_mqID));
+    mq_name = (char *)calloc(0, getDigit(server_mqID) + strlen(slash));
     
     sprintf(pid_to_str, "%d", server_mqID);
 
     strncat(mq_name, slash, strlen(slash));
-    strncat(mq_name, pid_to_str, sizeof(pid_to_str));
+    strncat(mq_name, pid_to_str, strlen(pid_to_str));
 
     printf("[%s] Message Queue Open \n", mq_name);
     //Create Message Queue
@@ -87,6 +87,10 @@ void client(void * params) {
     if (mfd == -1)
     { 
             perror(mq_name);
+            
+            free(mq_name);
+            free(pid_to_str);
+    
             exit(0);
     } 
 
@@ -94,12 +98,13 @@ void client(void * params) {
     while(value < 100) {
         if((mq_send(mfd, (char *)&value, attr.mq_msgsize, 1)) == -1){
             perror("Send Error");
+
             exit(-1);
         }
-        sleep(1);
+        printf("[%d] Send : %d \n", server_mqID, value);
         value ++;
     }
-    printf("%d Message Queue Done !", my_params->server_mqID);
+    if(value == 100) printf("%d Message Queue Done !", my_params->server_mqID);
 
     free(mq_name);
     free(pid_to_str);

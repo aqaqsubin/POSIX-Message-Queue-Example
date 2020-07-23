@@ -9,7 +9,7 @@
 #include <unistd.h>
 
 const char* input = "input.db";
-const char * slash = "/home/root/vscode/make_mq/";
+const char * slash = "/";
 
 int* ptr_input;
 int server_pid;
@@ -81,24 +81,23 @@ void server(void *params){
     
     //Message Queue name it Server PID + Thread Num
 
-    pid_to_str = (char *)malloc(sizeof(server_pid)/sizeof(int));
+    pid_to_str = (char *)malloc(getDigit(server_pid));
     thrNum_to_str = (char *)malloc(getDigit(my_params->thread_num));
 
-    mq_name = (char *)malloc(sizeof(server_pid)/sizeof(int) + getDigit(my_params->thread_num) + strlen(slash));
-    mq_id = (char *)malloc(sizeof(server_pid)/sizeof(int) + getDigit(my_params->thread_num));
+    mq_name = (char *)calloc(0, getDigit(server_pid) + getDigit(my_params->thread_num) + strlen(slash));
+    mq_id = (char *)calloc(0, getDigit(server_pid) + getDigit(my_params->thread_num));
     
-    printf("Size of slash : %d\n",sizeof(char *));
     sprintf(pid_to_str, "%d", server_pid);
     sprintf(thrNum_to_str, "%d", my_params->thread_num);
 
     //Get Message Queue Name ex) '/dev/mqueue/' + '1525' + '100' = '/dev/mqueue/1525100'
     strncat(mq_name, slash, strlen(slash));
-    strncat(mq_name, pid_to_str, sizeof(pid_to_str));
-    strncat(mq_name, thrNum_to_str, sizeof(thrNum_to_str));
+    strncat(mq_name, pid_to_str, strlen(pid_to_str));
+    strncat(mq_name, thrNum_to_str, strlen(thrNum_to_str));
 
     //Get Message Queue ID ex) '1525' + '100' = '1525100'
-    strncat(mq_id, pid_to_str, sizeof(pid_to_str));
-    strncat(mq_id, thrNum_to_str, sizeof(thrNum_to_str));
+    strncat(mq_id, pid_to_str, strlen(pid_to_str));
+    strncat(mq_id, thrNum_to_str, strlen(thrNum_to_str));
 
     //Write Message Queue ID
     ptr_input[my_params->thread_num] = atoi(mq_id);
@@ -110,18 +109,31 @@ void server(void *params){
     if (mfd == -1)
     { 
             perror("Message Queue Open Error");
-            exit(0);
+            mq_close(mfd);
+            mq_unlink((const char *)mq_name);
+            // exit(0);
+            free(mq_name);
+            free(pid_to_str);
+
+            return;
     }
 
     //100 cycle loop
-    while(value != 100) {
-        printf("[%s] Receive : %d \n", mq_id, value);
+    while(value != 99) {
+        // printf("[%s] Receive : %d \n", mq_id, value);
         if((mq_receive(mfd, (char *)&value, attr.mq_msgsize, NULL)) == -1){
             perror("Send Error");
+
+            mq_close(mfd);
+            mq_unlink((const char *)mq_name);
+            
+            free(mq_name);
+            free(pid_to_str);
+            
             exit(-1);
         }
     }
-    printf("%d Thread Done !", my_params->thread_num);
+    printf("%d Thread Done !\n", my_params->thread_num);
     
     mq_close(mfd);
     mq_unlink((const char *)mq_name);
@@ -134,8 +146,9 @@ void server(void *params){
 
 //Return Number of Digit
 int getDigit(int pid){
-    int i = 0;
-    while(pid > 0){
+    int i = 1;
+
+    while(pid=(int)(pid / 10) > 0){
         pid = (int)(pid / 10);
         i ++;
     }
