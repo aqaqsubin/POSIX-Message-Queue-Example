@@ -90,7 +90,7 @@ void server(void *params){
     sprintf(pid_to_str, "%d", server_pid);
     sprintf(thrNum_to_str, "%d", my_params->thread_num);
 
-    //Get Message Queue Name ex) '/dev/mqueue/' + '1525' + '100' = '/dev/mqueue/1525100'
+    //Get Message Queue Name ex) '/' + '1525' + '100' = '/1525100'
     strncat(mq_name, slash, strlen(slash));
     strncat(mq_name, pid_to_str, strlen(pid_to_str));
     strncat(mq_name, thrNum_to_str, strlen(thrNum_to_str));
@@ -102,8 +102,8 @@ void server(void *params){
     //Write Message Queue ID
     ptr_input[my_params->thread_num] = atoi(mq_id);
 
-    printf("[%s] Message Queue ID : %d \n", mq_id, atoi(mq_id));
     printf("[%s] Message Queue Open \n", mq_name);
+
     //Create Message Queue
     mfd = mq_open((const char *)mq_name, O_RDWR | O_CREAT, 0666, &attr);
     if (mfd == -1)
@@ -111,7 +111,7 @@ void server(void *params){
             perror("Message Queue Open Error");
             mq_close(mfd);
             mq_unlink((const char *)mq_name);
-            // exit(0);
+
             free(mq_name);
             free(pid_to_str);
 

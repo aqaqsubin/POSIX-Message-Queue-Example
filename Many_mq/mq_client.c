@@ -82,12 +82,13 @@ void client(void * params) {
     strncat(mq_name, pid_to_str, strlen(pid_to_str));
 
     printf("[%s] Message Queue Open \n", mq_name);
+    
     //Create Message Queue
     mfd = mq_open((const char *)mq_name, O_WRONLY, 0666, &attr);
     if (mfd == -1)
     { 
             perror(mq_name);
-            
+
             free(mq_name);
             free(pid_to_str);
     
